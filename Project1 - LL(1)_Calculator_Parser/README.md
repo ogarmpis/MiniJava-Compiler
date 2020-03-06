@@ -1,5 +1,5 @@
 
-### Homework 1 - LL(1) Calculator Parser - Translator to Java
+# Homework 1 - LL(1) Calculator Parser - Translator to Java
 
 ## Part 1
 

@@ -1,0 +1,12 @@
+1.  goal   -> expr
+
+2.  expr   -> term expr2
+3.  expr2  -> '^' term expr2
+4.          | e
+
+5.  term   -> factor term2
+6.  term2  -> '&' factor term2
+7.          | e
+
+8.  factor -> '0'..'9'
+9.          | '(' expr ')'

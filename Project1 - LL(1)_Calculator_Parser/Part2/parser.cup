@@ -1,0 +1,88 @@
+/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
+/**
+ *  Package and Import Specifications
+ */
+import java_cup.runtime.*;
+
+/**
+ *  Usercode Components
+ */
+parser code {:
+    // Connect this parser to a scanner!
+    Scanner s;
+    Parser(Scanner s){ this.s=s; }
+:}
+
+/* define how to connect to the scanner! */
+scan with {: return s.next_token(); :};
+
+/**
+ *  Symbol Lists
+ */
+
+/* Terminals (tokens returned by the scanner). */
+terminal            CONCAT, COMMA, LPAREN, RPAREN, /*LBRKT,*/ RBRKT, RPARENLBRKT;
+terminal String     IF, ELSE, PREFIX, SUFFIX, IDENT, STRING_LITERAL;
+
+/*  Non terminals */
+non terminal           Goal, Declarations, Body;
+non terminal String    SingleDecl, Calls, SingleCall, DeclArguments, CallArguments, ReturnStatmnt, IfStatement, Condition;
+
+/**
+ *  Precedence Declarations
+ */
+//precedence left RPAREN;
+//precedence left RPARENLBRKT;
+
+/**
+ *  The Grammar Rules
+ */
+Goal           ::= Declarations:d Calls:c                {: System.out.println("public class Main {\n" + d + c + "}"); :}
+                ;
+
+Declarations   ::= SingleDecl:s Declarations:d           {: RESULT = s + d; :}
+                |  SingleCall:c                          {: RESULT = "\n\tpublic static void main(String[] args) {\n\t\tSystem.out.println(" + c + ");\n"; :}
+                ;
+
+SingleDecl     ::= IDENT:i LPAREN DeclArguments:a RPARENLBRKT Body:b RBRKT  {: RESULT = "\tpublic static String "+ i +"("+ a +") {\n\t\treturn "+ b +";\n\t}\n"; :}
+                ;
+
+DeclArguments  ::= IDENT:i COMMA DeclArguments:a         {: RESULT = "String " + i + ", " + a; :}
+                |  IDENT:i                               {: RESULT = "String " + i; :}
+                |                                        {: RESULT = ""; :}
+                ;
+
+Body           ::= ReturnStatmnt:r                       {: RESULT = r; :}
+                |  IfStatement:i                         {: RESULT = i; :}
+                ;
+
+ReturnStatmnt  ::= IDENT:i CONCAT ReturnStatmnt:r        {: RESULT = i + " + " + r; :}
+                |  IDENT:i                               {: RESULT = i; :}
+                |  STRING_LITERAL:s                      {: RESULT = "\"" + s + "\""; :}
+                |  SingleCall:c                          {: RESULT = c; :}
+                ;
+
+IfStatement    ::= IF LPAREN Condition:c RPAREN Body:b1 ELSE Body:b2        {: RESULT = "(" + c + ") ? " + b1 + " : " + b2; :}
+                ;
+
+Condition      ::= IDENT:i PREFIX STRING_LITERAL:s              {: RESULT = "\"" + s + "\".startsWith(" + i + ")"; :}
+                |  STRING_LITERAL:s PREFIX IDENT:i              {: RESULT = i + ".startsWith(\"" + s + "\")"; :}
+                |  IDENT:i SUFFIX STRING_LITERAL:s              {: RESULT = "\"" + s + "\".endsWith(" + i + ")"; :}
+                |  STRING_LITERAL:s SUFFIX IDENT:i              {: RESULT = i + ".endsWith(\"" + s + "\")"; :}
+                ;
+
+Calls          ::= SingleCall:s Calls:c                         {: RESULT = "\t\tSystem.out.println(" + s + ");\n" + c; :}
+                |                                               {: RESULT = "\t}\n"; :}
+                ;
+
+SingleCall     ::= IDENT:i LPAREN CallArguments:a RPAREN        {: RESULT = i + "(" + a + ")"; :}
+                ;
+
+CallArguments  ::= IDENT:i COMMA CallArguments:a                {: RESULT = i + ", " + a; :}
+                |  IDENT:i                                      {: RESULT = i; :}
+                |  STRING_LITERAL:s COMMA CallArguments:a       {: RESULT = "\"" + s + "\", " + a; :}
+                |  STRING_LITERAL:s                             {: RESULT = "\"" + s + "\""; :}
+                |  SingleCall:c COMMA CallArguments:a           {: RESULT = c + ", " + a; :}
+                |  SingleCall:c                                 {: RESULT = c; :}
+                |                                               {: RESULT = ""; :}
+                ;
